@@ -1,0 +1,54 @@
+services:
+  # Web server running PHP & Apache
+  apache:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: contact_apache
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - mysql
+      - mailtrap
+
+  # Database server (MySQL)
+  mysql:
+    image: mysql:8.0
+    container_name: contact_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: contactdb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    restart: always
+
+  # phpMyAdmin for database administration
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: contact_phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+
+  # Mailtrap substitute (Mailpit) for capturing emails locally
+  mailtrap:
+    image: axllent/mailpit:latest
+    container_name: contact_mailcatcher
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+    restart: always
+
+volumes:
+  mysql_data:
